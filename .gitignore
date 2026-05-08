@@ -85,4 +85,6 @@ runs/
 
 # Data files - ignore files in data directories but keep directories
 model/data/*
+!model/data/.gitkeep
 data/*
+!data/.gitkeep
