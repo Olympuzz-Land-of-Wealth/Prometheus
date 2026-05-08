@@ -75,6 +75,14 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
+# MLflow / runtime outputs
+mlflow.db
+mlruns/
+runs/
+
+# Model weights
+*.pt
+
 # Data files - ignore entire data directory
 model/data/
 data/
