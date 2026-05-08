@@ -83,6 +83,6 @@ runs/
 # Model weights
 *.pt
 
-# Data files - ignore entire data directory
-model/data/
-data/
+# Data files - ignore files in data directories but keep directories
+model/data/*
+data/*
