@@ -104,6 +104,4 @@ data/**/*.png
 # Ensure ALL model weights are un-ignored
 !**/*.pt
 
-# Personal Documents / PDFs
-docs/
-
+node_modules/
