@@ -32,7 +32,8 @@ def train_model(data_yaml: str, epochs: int, batch_size: int, device: str) -> No
             batch=batch_size,
             device=device, # Ensure you have CUDA setup, otherwise switch to 'cpu'
             project='prometheus_runs',
-            name='baseline_model'
+            name='baseline_model',
+            freeze=10 # Transfer learning: freeze first 10 layers
         )
         
         # Log hyperparameters for Task B-4 documentation

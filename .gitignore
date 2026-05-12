@@ -88,3 +88,7 @@ model/data/*
 !model/data/.gitkeep
 data/*
 !data/.gitkeep
+
+# Personal Documents / PDFs
+docs/
+

@@ -62,10 +62,22 @@ def extract_frames(video_path: str, output_dir: str, frame_interval: int = 30, a
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extract and anonymize frames from CCTV footage.")
-    parser.add_argument("--video", type=str, required=True, help="Path to raw video file")
-    parser.add_argument("--output", type=str, default="model/data/test_frames", help="Output directory")
+    parser.add_argument("--input", type=str, required=True, help="Path to raw video file or directory of videos")
+    parser.add_argument("--output", type=str, default="model/data/raw_frames", help="Output directory")
     parser.add_argument("--interval", type=int, default=30, help="Frame extraction interval")
     parser.add_argument("--noblur", action="store_false", dest="apply_blur", help="Disable face blurring")
     
     args = parser.parse_args()
-    extract_frames(args.video, args.output, args.interval, args.apply_blur)
+    
+    if os.path.isdir(args.input):
+        video_extensions = ('.mp4', '.avi', '.mov', '.mkv')
+        videos = [f for f in os.listdir(args.input) if f.lower().endswith(video_extensions)]
+        print(f"Found {len(videos)} videos in {args.input}")
+        
+        for video in videos:
+            video_path = os.path.join(args.input, video)
+            # Create a unique subfolder for each video's frames
+            video_output = os.path.join(args.output, os.path.splitext(video)[0])
+            extract_frames(video_path, video_output, args.interval, args.apply_blur)
+    else:
+        extract_frames(args.input, args.output, args.interval, args.apply_blur)
