@@ -3,123 +3,65 @@
 This guide provides instructions for setting up the environment and training the **Computer Vision-Based Gym Machine Occupancy Detection** model.
 
 ## 1. Prerequisites
+* **Python 3.10+**.
+* **NVIDIA GPU** (Optional but recommended for faster training; the script defaults to CPU if unavailable).
 
-* 
-**Python 3.10+**.
+## 2. Directory Overview (`/model`)
+*   **`pre-processing.py`**: Extracts frames from videos and applies Gaussian blurring to faces for PDPA compliance.
+*   **`auto_label.py`**: AI-assisted labeling tool that uses a pre-trained model to automatically detect and label people.
+*   **`data_split.py`**: Utility to randomly split your annotated dataset into `train` and `val` sets.
+*   **`train.py`**: The primary training script for YOLOv10 with MLflow integration and layer freezing.
+*   **`experiment.py`**: A script for running multiple training versions (experiments) to compare hyperparameters.
+*   **`data/`**: Contains configuration files (`.yml`) and dataset storage.
 
-
-* 
-**NVIDIA GPU** (Optional but recommended for faster training; the script defaults to CPU if unavailable).
-
-
-
-## 2. Environment Setup
-
+## 3. Environment Setup
 Clone the repository and navigate to the project root, then run the following:
-
 ```bash
-# Create a virtual environment
+# Create and activate virtual environment
 python -m venv venv
-
-# Activate the environment
-# Windows:
 venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
 
 # Install dependencies
-pip install opencv-python ultralytics mlflow
-
+pip install opencv-python ultralytics mlflow shap
 ```
 
-## 3. Data Preparation
-
-Before training, you must extract and anonymize frames from the CCTV footage to comply with PDPA.
+## 4. Data Preparation Workflow
 
 ### Step 1: Frame Extraction & Anonymization
-
-Run the pre-processing script to extract frames and automatically blur faces.
-
+Run the pre-processing script on your raw video folder.
 ```bash
-python model/pre-processing.py --video model/data/your_video.mp4 --output model/data/test_frames --interval 30
-
+python model/pre-processing.py --input data/raw_videos --output model/data/raw_frames --interval 30
 ```
 
-### Step 2: Labeling
+### Step 2: AI-Assisted Auto-Labeling
+Automatically generate "person" labels to reduce manual work by 50%.
+```bash
+python model/auto_label.py --img_dir model/data/raw_frames --out_dir model/data/labels_raw
+```
 
-1. Launch the labeling tool: `labelImg`.
-2. Set the save format to **YOLO**.
-3. Annotate boxes for `person` (Index 0) and `gym-machine` (Index 1).
+### Step 3: Manual Verification (LabelImg)
+1. Launch `labelImg`.
+2. Open Dir: `model/data/raw_frames` | Change Save Dir: `model/data/labels_raw`.
+3. Verify the "person" boxes and manually annotate `gym-machine` (Class 1).
 
+### Step 4: Dataset Splitting
+Partition your data for training.
+```bash
+python model/data_split.py --img_dir model/data/raw_frames --lbl_dir model/data/labels_raw --output model/data/final_dataset
+```
 
-4. Organize your files into the following structure:
-* `model/data/test_frames/images/train/`
-* `model/data/test_frames/labels/train/`
-
-
-
-## 4. Training the Model
-
-We use **YOLOv10s** for an optimal balance between inference speed and accuracy.
-
-### Run Training
-
-Execute the training script. This script is integrated with **MLflow** to track experiments and metrics like **mAP@0.5** and **State Accuracy**.
+## 5. Training the Model
+We use **YOLOv10s** with transfer learning (first 10 layers frozen).
 
 ```bash
 python model/train.py --data model/data/tiny_test_data.yml --epochs 50 --batch 16 --device cpu
-
 ```
 
-*Change `--device cpu` to `--device 0` if an NVIDIA GPU is available.*
-
-## 5. Monitoring Results
-
-Once training begins, you can monitor the model's progress in real-time.
-
-1. In a new terminal, activate the `venv` and run:
-```bash
-mlflow ui
-
-```
-
-
-2. Open `http://localhost:5000` in your browser.
-
-
-3. Check the **Prometheus_Occupancy_Detection** experiment to view:
-* 
-**Loss Curves** (Box, Class, DFL).
-
-
-* 
-**mAP@0.5** (Target: $\ge 0.85$).
-
-
-* 
-**State Accuracy** (Target: $\ge 95\%$).
-
-
-
-
-
-## 6. Project Configuration (`tiny_test_data.yml`)
-
-Ensure your YAML file points to the correct local paths:
-
-```yaml
-path: ./model/data/test_frames
-train: images/train
-val: images/val
-
-names:
-  0: person
-  1: gym-machine
-
-```
+## 6. Monitoring & Targets
+Run `mlflow ui` to track progress. Our project targets are:
+* **mAP@0.5**: $\ge 0.85$
+* **State Accuracy**: $\ge 95\%$
 
 ---
-
-### Implementation Note for Windows Users
-
-If you encounter a `KeyError: 'c'` or `UnsupportedModelRegistryStoreURIException`, ensure your `train.py` uses the `pathlib` URI fix to handle Windows file paths correctly when communicating with MLflow.
+### Windows Note
+The scripts include a `pathlib` URI fix to ensure MLflow correctly handles Windows absolute paths (resolving common `KeyError: 'c'` errors).
