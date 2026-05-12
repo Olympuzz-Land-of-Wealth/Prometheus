@@ -1,39 +1,57 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, FileVideo, CheckCircle2 } from 'lucide-react';
 import ProgressPipeline from '../components/upload/ProgressPipeline';
 import { motion, AnimatePresence } from 'framer-motion';
+import { uploadVideo, waitForMachines } from '../api/prometheus';
 
 const STATUS_MESSAGES = {
   1: 'Waiting for video upload...',
-  2: 'Step 2: Blurring faces for privacy...',
-  3: 'Step 3: Running machine detection model...',
-  4: 'Step 4: Awaiting owner confirmation...',
-  5: 'All done — your gym is live!',
+  2: 'Uploading video to server...',
+  3: 'Running machine detection model...',
+  4: 'Awaiting owner confirmation...',
 };
 
 export default function VideoUpload() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState(null);
+  const [error, setError] = useState(null);
 
-  const simulateUpload = useCallback((name) => {
-    setFileName(name);
+  const handleFile = useCallback(async (file) => {
+    setFileName(file.name);
+    setError(null);
     setCurrentStep(2);
-    setTimeout(() => setCurrentStep(3), 2500);
-    setTimeout(() => setCurrentStep(4), 5000);
-  }, []);
+
+    try {
+      const { session_id } = await uploadVideo(file);
+      setCurrentStep(3);
+
+      const data = await waitForMachines(session_id);
+      setCurrentStep(4);
+
+      // Small pause so user sees step 4 before navigating
+      await new Promise((r) => setTimeout(r, 800));
+      navigate('/confirm', { state: { session_id, machines: data.machines } });
+    } catch (err) {
+      setError(err.message);
+      setCurrentStep(1);
+      setFileName(null);
+    }
+  }, [navigate]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer?.files?.[0];
-    if (file) simulateUpload(file.name);
-  }, [simulateUpload]);
+    if (file) handleFile(file);
+  }, [handleFile]);
 
   const handleFileSelect = useCallback((e) => {
     const file = e.target.files?.[0];
-    if (file) simulateUpload(file.name);
-  }, [simulateUpload]);
+    if (file) handleFile(file);
+  }, [handleFile]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8 bg-prometheus-bg font-inter">
@@ -70,6 +88,7 @@ export default function VideoUpload() {
               accept="video/*"
               className="hidden"
               onChange={handleFileSelect}
+              disabled={currentStep > 1}
             />
             <AnimatePresence mode="wait">
               {!fileName ? (
@@ -109,6 +128,10 @@ export default function VideoUpload() {
               )}
             </AnimatePresence>
           </label>
+
+          {error && (
+            <p className="mt-4 text-center text-prometheus-red text-[12px]">{error}</p>
+          )}
         </div>
 
         {/* Pipeline */}
@@ -126,7 +149,7 @@ export default function VideoUpload() {
           <p className="text-prometheus-secondary text-[13px]">
             {STATUS_MESSAGES[currentStep]}
           </p>
-          {currentStep > 1 && currentStep < 5 && (
+          {currentStep > 1 && (
             <div className="mt-3 flex justify-center">
               <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
