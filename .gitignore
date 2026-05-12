@@ -105,3 +105,4 @@ data/**/*.png
 !**/*.pt
 
 node_modules/
+CLAUDE.md
