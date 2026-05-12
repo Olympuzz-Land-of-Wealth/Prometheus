@@ -88,3 +88,5 @@ model/data/*
 !model/data/.gitkeep
 data/*
 !data/.gitkeep
+
+node_modules/
