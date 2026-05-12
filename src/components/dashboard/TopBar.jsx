@@ -1,6 +1,6 @@
 import { Flame, Video } from 'lucide-react';
 
-export default function TopBar({ freeCount, totalCount }) {
+export default function TopBar({ freeCount, totalCount, connected = false }) {
   const occupiedCount = totalCount - freeCount;
   const occupancyPercent = (freeCount / totalCount) * 100;
 
@@ -18,7 +18,9 @@ export default function TopBar({ freeCount, totalCount }) {
         </div>
         <span className="text-prometheus-cream font-semibold text-[14px] tracking-tight">Prometheus</span>
         <span className="text-prometheus-secondary text-[11px] ml-1">Live</span>
-        <span className="w-1.5 h-1.5 rounded-full bg-prometheus-green animate-pulse ml-0.5" />
+        <span
+          className={`w-1.5 h-1.5 rounded-full ml-0.5 ${connected ? 'bg-prometheus-green animate-pulse' : 'bg-prometheus-secondary'}`}
+        />
       </div>
 
       {/* Center: Occupancy bar */}

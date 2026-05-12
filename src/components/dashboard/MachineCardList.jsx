@@ -50,7 +50,9 @@ function MachineCard({ machine }) {
             Model confidence:{' '}
             <span style={{ color: getConfidenceColor(machine.confidence) }}>{machine.confidence}%</span>
           </p>
-          <p className="text-[9px] text-prometheus-secondary">Detected by: {machine.camera}</p>
+          {machine.camera && (
+            <p className="text-[9px] text-prometheus-secondary">Detected by: {machine.camera}</p>
+          )}
         </div>
       )}
     </div>
