@@ -29,7 +29,12 @@ def auto_label(image_root, label_root, model_path='yolov10s.pt', confidence=0.3)
         label_full_path = os.path.join(label_root, label_rel_path)
         
         # Create subdirectories in labels folder if they don't exist
-        os.makedirs(os.path.dirname(label_full_path), exist_ok=True)
+        label_dir = os.path.dirname(label_full_path)
+        if not os.path.exists(label_dir):
+            os.makedirs(label_dir, exist_ok=True)
+            # Create classes.txt in the new directory for LabelImg compatibility
+            with open(os.path.join(label_dir, 'classes.txt'), 'w') as f_cls:
+                f_cls.write("person\ngym-machine\n")
         
         # Run inference
         results = model(img_path, conf=confidence, verbose=False)

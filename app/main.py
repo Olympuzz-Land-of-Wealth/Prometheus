@@ -4,12 +4,17 @@ import cv2
 import numpy as np
 import io
 from PIL import Image
+import os
 
 app = FastAPI(title="Prometheus Occupancy API")
 
-# Load the best model (placeholder for now)
-# model = YOLO('prometheus_runs/Baseline_v1/weights/best.pt')
-model = YOLO('yolov10s.pt') # Fallback to base model
+# Load the best model
+model_path = 'runs/detect/prometheus_runs/baseline_model/weights/best.pt'
+if os.path.exists(model_path):
+    model = YOLO(model_path)
+else:
+    print(f"Warning: {model_path} not found. Falling back to base model.")
+    model = YOLO('yolov10s.pt')
 
 @app.get("/health")
 def health_check():
