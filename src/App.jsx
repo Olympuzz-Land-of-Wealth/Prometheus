@@ -7,7 +7,6 @@ import { AuthProvider } from '@/lib/AuthContext';
 
 import AppLayout from './components/layout/AppLayout';
 import VideoUpload from './pages/VideoUpload';
-import MachineConfirm from './pages/MachineConfirm';
 import LiveDashboard from './pages/LiveDashboard';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
           <Routes>
             <Route element={<AppLayout />}>
               <Route path="/" element={<VideoUpload />} />
-              <Route path="/confirm" element={<MachineConfirm />} />
               <Route path="/dashboard" element={<LiveDashboard />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />

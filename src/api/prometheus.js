@@ -8,18 +8,25 @@ export async function uploadVideo(file) {
   return res.json(); // { session_id, status }
 }
 
-// Poll until machines are ready. Resolves with machine list.
-export async function waitForMachines(sessionId, { maxAttempts = 30, intervalMs = 1000 } = {}) {
+// Poll until analysis is ready. Resolves with session_id.
+export async function waitForAnalysis(sessionId, { maxAttempts = 60, intervalMs = 1000 } = {}) {
   for (let i = 0; i < maxAttempts; i++) {
-    const res = await fetch(`${BASE}/api/machines?session_id=${sessionId}`);
-    if (res.status === 200) return res.json();
-    if (res.status !== 202) throw new Error('Detection failed');
+    const res = await fetch(`${BASE}/api/status?session_id=${sessionId}`);
+    if (!res.ok) throw new Error('Status check failed');
+    const { status } = await res.json();
+    if (status === 'ready') return sessionId;
+    if (status === 'error') throw new Error('Analysis failed on server');
     await new Promise((r) => setTimeout(r, intervalMs));
   }
-  throw new Error('Detection timed out');
+  throw new Error('Analysis timed out');
 }
 
-// Returns a WebSocket connected to the occupancy stream.
-export function openOccupancySocket(sessionId) {
-  return new WebSocket(`ws://localhost:8000/ws/occupancy?session_id=${sessionId}`);
+export async function fetchResults(sessionId) {
+  const res = await fetch(`${BASE}/api/results?session_id=${sessionId}`);
+  if (!res.ok) throw new Error('Failed to fetch results');
+  return res.json();
+}
+
+export function videoUrl(sessionId) {
+  return `${BASE}/api/video?session_id=${sessionId}`;
 }
