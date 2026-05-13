@@ -79,25 +79,25 @@ Thumbs.db
 mlflow.db
 mlruns/
 
-# Ignore all runs content by default EXCEPT weights
+# Ignore all runs content by default EXCEPT weights and results
 runs/**
 !runs/**/
 !**/*.pt
-# Re-ignore all large/unwanted artifacts in runs
-runs/**/*.jpg
-runs/**/*.png
-runs/**/*.csv
-runs/**/*.yaml
+!runs/**/*.png
+!runs/**/*.jpg
+!runs/**/*.csv
+!runs/**/*.yaml
 
 # Data files
 model/data/**/*
 !model/data/**/.gitkeep
 data/**/*
 !data/**/.gitkeep
-# Global ignore for media to keep repo small
-*.jpg
-*.jpeg
-*.png
+# Global ignore for media in data folders
+model/data/**/*.jpg
+model/data/**/*.png
+data/**/*.jpg
+data/**/*.png
 *.mp4
 *.avi
 *.mov
