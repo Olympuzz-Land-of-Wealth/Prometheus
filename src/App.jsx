@@ -8,6 +8,7 @@ import { AuthProvider } from '@/lib/AuthContext';
 import AppLayout from './components/layout/AppLayout';
 import VideoUpload from './pages/VideoUpload';
 import LiveDashboard from './pages/LiveDashboard';
+import Report from './pages/Report';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<VideoUpload />} />
               <Route path="/dashboard" element={<LiveDashboard />} />
+              <Route path="/report" element={<Report />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
           </Routes>

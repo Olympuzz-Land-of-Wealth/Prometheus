@@ -34,11 +34,19 @@ function getVideoRect(container, videoEl) {
   };
 }
 
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 export default function VideoPlayer({ src, frames, onFrameChange }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [rect, setRect] = useState({ x: 0, y: 0, w: 0, h: 0 });
   const [currentFrame, setCurrentFrame] = useState(null);
+  const [timestamp, setTimestamp] = useState({ current: 0, duration: 0 });
 
   const updateRect = useCallback(() => {
     if (containerRef.current && videoRef.current) {
@@ -62,14 +70,20 @@ export default function VideoPlayer({ src, frames, onFrameChange }) {
       const ms = video.currentTime * 1000;
       const frame = findFrame(frames, ms);
       setCurrentFrame(frame);
-      onFrameChange?.(frame);
+      setTimestamp({ current: video.currentTime, duration: video.duration || 0 });
+      onFrameChange?.(frame, video.currentTime);
+    };
+
+    const onMetadata = () => {
+      updateRect();
+      setTimestamp({ current: 0, duration: video.duration || 0 });
     };
 
     video.addEventListener('timeupdate', onTimeUpdate);
-    video.addEventListener('loadedmetadata', updateRect);
+    video.addEventListener('loadedmetadata', onMetadata);
     return () => {
       video.removeEventListener('timeupdate', onTimeUpdate);
-      video.removeEventListener('loadedmetadata', updateRect);
+      video.removeEventListener('loadedmetadata', onMetadata);
     };
   }, [frames, onFrameChange, updateRect]);
 
@@ -77,7 +91,7 @@ export default function VideoPlayer({ src, frames, onFrameChange }) {
   const machines = currentFrame?.machines ?? [];
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-black rounded-lg overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full bg-black rounded-lg overflow-hidden" onLoadedMetadata={updateRect}>
       <video
         ref={videoRef}
         src={src}
@@ -85,6 +99,11 @@ export default function VideoPlayer({ src, frames, onFrameChange }) {
         className="w-full h-full object-contain"
         onLoadedMetadata={updateRect}
       />
+
+      {/* Timestamp overlay */}
+      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-prometheus-cream text-[11px] font-mono px-2.5 py-1 rounded-md pointer-events-none">
+        {formatTime(timestamp.current)} / {formatTime(timestamp.duration)}
+      </div>
 
       {/* SVG bbox overlay — sits exactly over the letterboxed video area */}
       <svg

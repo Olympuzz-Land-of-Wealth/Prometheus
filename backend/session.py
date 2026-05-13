@@ -9,8 +9,9 @@ Status = Literal["processing", "ready", "error"]
 class Session:
     session_id: str
     video_path: str
+    filename: str = ""
     status: Status = "processing"
-    results: dict | None = None   # full analysis JSON, set when ready
+    results: dict | None = None
     frame_width: int = 1920
     frame_height: int = 1080
 
@@ -18,9 +19,9 @@ class Session:
 _store: dict[str, Session] = {}
 
 
-def create_session(video_path: str) -> "Session":
+def create_session(video_path: str, filename: str = "") -> "Session":
     sid = uuid.uuid4().hex[:8]
-    s = Session(session_id=sid, video_path=video_path)
+    s = Session(session_id=sid, video_path=video_path, filename=filename)
     _store[sid] = s
     return s
 

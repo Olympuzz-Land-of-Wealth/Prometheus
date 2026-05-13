@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Upload, Activity, Flame } from 'lucide-react';
+import { Upload, Activity, Flame, FileBarChart2 } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'Video Upload', icon: Upload, description: 'Upload & Process' },
   { path: '/dashboard', label: 'Detection Player', icon: Activity, description: 'Review Results' },
+  { path: '/report', label: 'Report', icon: FileBarChart2, description: 'Stats & History' },
 ];
 
 export default function Sidebar() {

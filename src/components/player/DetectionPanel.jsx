@@ -1,4 +1,11 @@
-import { Users, Dumbbell } from 'lucide-react';
+import { Users, Dumbbell, Clock } from 'lucide-react';
+
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 function getConfidenceColor(c) {
   if (c >= 0.85) return '#00C896';
@@ -28,7 +35,7 @@ function DetectionRow({ label, color, confidence, icon: Icon }) {
   );
 }
 
-export default function DetectionPanel({ frame, totalFrames }) {
+export default function DetectionPanel({ frame, totalFrames, currentTime }) {
   const persons = frame?.persons ?? [];
   const machines = frame?.machines ?? [];
   const hasData = persons.length > 0 || machines.length > 0;
@@ -36,12 +43,22 @@ export default function DetectionPanel({ frame, totalFrames }) {
   return (
     <div className="h-full flex flex-col bg-prometheus-card rounded-lg border border-prometheus-border">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-prometheus-border">
-        <h2 className="text-prometheus-cream text-[14px] font-semibold">Frame Detections</h2>
-        {frame && (
-          <p className="text-prometheus-secondary text-[10px] mt-0.5">
-            Frame {frame.frame_index} · {(frame.timestamp_ms / 1000).toFixed(2)}s
-          </p>
+      <div className="px-4 py-3 border-b border-prometheus-border flex items-center justify-between">
+        <div>
+          <h2 className="text-prometheus-cream text-[14px] font-semibold">Frame Detections</h2>
+          {frame && (
+            <p className="text-prometheus-secondary text-[10px] mt-0.5">
+              Frame {frame.frame_index}
+            </p>
+          )}
+        </div>
+        {currentTime != null && (
+          <div className="flex items-center gap-1.5 bg-prometheus-elevated px-2.5 py-1 rounded-md">
+            <Clock className="w-3 h-3 text-prometheus-green" />
+            <span className="text-prometheus-cream text-[12px] font-mono font-semibold">
+              {formatTime(currentTime)}
+            </span>
+          </div>
         )}
       </div>
 

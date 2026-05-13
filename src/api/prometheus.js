@@ -27,6 +27,12 @@ export async function fetchResults(sessionId) {
   return res.json();
 }
 
+export async function fetchUploads() {
+  const res = await fetch(`${BASE}/api/uploads`);
+  if (!res.ok) throw new Error('Failed to fetch uploads');
+  return res.json();
+}
+
 export function videoUrl(sessionId) {
   return `${BASE}/api/video?session_id=${sessionId}`;
 }
