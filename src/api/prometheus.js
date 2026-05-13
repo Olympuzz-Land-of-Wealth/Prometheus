@@ -9,7 +9,8 @@ export async function uploadVideo(file) {
 }
 
 // Poll until analysis is ready. Resolves with session_id.
-export async function waitForAnalysis(sessionId, { maxAttempts = 60, intervalMs = 1000 } = {}) {
+// 600 attempts × 2s = up to 20 minutes — enough for long gym videos on CPU.
+export async function waitForAnalysis(sessionId, { maxAttempts = 600, intervalMs = 2000 } = {}) {
   for (let i = 0; i < maxAttempts; i++) {
     const res = await fetch(`${BASE}/api/status?session_id=${sessionId}`);
     if (!res.ok) throw new Error('Status check failed');
