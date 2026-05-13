@@ -20,7 +20,7 @@ PERSON_CLASS = 0
 MACHINE_CLASS = 1
 
 WEIGHTS_PATH = (
-    Path(__file__).parent.parent / "model" / "runs" / "train" / "weights" / "best.pt"
+    Path(__file__).parent.parent / "runs" / "detect" / "prometheus_runs" / "baseline_model" / "weights" / "best.pt"
 )
 
 
