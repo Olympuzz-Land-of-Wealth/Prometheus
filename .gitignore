@@ -78,16 +78,31 @@ Thumbs.db
 # MLflow / runtime outputs
 mlflow.db
 mlruns/
-runs/
 
-# Model weights
-*.pt
+# Ignore all runs content by default EXCEPT weights
+runs/**
+!runs/**/
+!**/*.pt
+# Re-ignore all large/unwanted artifacts in runs
+runs/**/*.jpg
+runs/**/*.png
+runs/**/*.csv
+runs/**/*.yaml
 
-# Data files - ignore files in data directories but keep directories
-model/data/*
-!model/data/.gitkeep
-data/*
-!data/.gitkeep
+# Data files
+model/data/**/*
+!model/data/**/.gitkeep
+data/**/*
+!data/**/.gitkeep
+# Global ignore for media to keep repo small
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+*.mov
+# Ensure ALL model weights are un-ignored
+!**/*.pt
 
 # Personal Documents / PDFs
 docs/
