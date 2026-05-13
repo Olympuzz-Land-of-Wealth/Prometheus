@@ -1,0 +1,98 @@
+import { Users, Dumbbell } from 'lucide-react';
+
+function getConfidenceColor(c) {
+  if (c >= 0.85) return '#00C896';
+  if (c >= 0.65) return '#F5A623';
+  return '#E84545';
+}
+
+function DetectionRow({ label, color, confidence, icon: Icon }) {
+  const pct = Math.round(confidence * 100);
+  return (
+    <div className="flex items-center gap-3 py-2 border-b border-prometheus-border last:border-0">
+      <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
+        <Icon className="w-3.5 h-3.5" style={{ color }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-prometheus-cream text-[12px] font-medium">{label}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 h-1 rounded-full bg-prometheus-border overflow-hidden">
+            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: getConfidenceColor(confidence) }} />
+          </div>
+          <span className="text-[10px] font-semibold tabular-nums" style={{ color: getConfidenceColor(confidence) }}>
+            {pct}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function DetectionPanel({ frame, totalFrames }) {
+  const persons = frame?.persons ?? [];
+  const machines = frame?.machines ?? [];
+  const hasData = persons.length > 0 || machines.length > 0;
+
+  return (
+    <div className="h-full flex flex-col bg-prometheus-card rounded-lg border border-prometheus-border">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-prometheus-border">
+        <h2 className="text-prometheus-cream text-[14px] font-semibold">Frame Detections</h2>
+        {frame && (
+          <p className="text-prometheus-secondary text-[10px] mt-0.5">
+            Frame {frame.frame_index} · {(frame.timestamp_ms / 1000).toFixed(2)}s
+          </p>
+        )}
+      </div>
+
+      {/* Summary chips */}
+      <div className="flex gap-2 px-4 py-3 border-b border-prometheus-border">
+        <div className="flex items-center gap-1.5 bg-prometheus-red/10 border border-prometheus-red/20 rounded-md px-3 py-1.5">
+          <Users className="w-3.5 h-3.5 text-prometheus-red" />
+          <span className="text-prometheus-red text-[12px] font-semibold">{persons.length} person{persons.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex items-center gap-1.5 bg-prometheus-green/10 border border-prometheus-green/20 rounded-md px-3 py-1.5">
+          <Dumbbell className="w-3.5 h-3.5 text-prometheus-green" />
+          <span className="text-prometheus-green text-[12px] font-semibold">{machines.length} machine{machines.length !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+
+      {/* Detection list */}
+      <div className="flex-1 overflow-auto px-4 py-2">
+        {!hasData ? (
+          <p className="text-prometheus-secondary text-[12px] text-center mt-6">
+            {frame ? 'No detections in this frame' : 'Play the video to see detections'}
+          </p>
+        ) : (
+          <>
+            {persons.map((p, i) => (
+              <DetectionRow
+                key={`p${i}`}
+                label={`Person ${i + 1}`}
+                color="#E84545"
+                confidence={p.confidence}
+                icon={Users}
+              />
+            ))}
+            {machines.map((m, i) => (
+              <DetectionRow
+                key={`m${i}`}
+                label={`Machine ${i + 1}`}
+                color="#00C896"
+                confidence={m.confidence}
+                icon={Dumbbell}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-2.5 border-t border-prometheus-border">
+        <p className="text-prometheus-secondary text-[10px]">
+          {totalFrames} frames analyzed · sampled every 5th frame
+        </p>
+      </div>
+    </div>
+  );
+}

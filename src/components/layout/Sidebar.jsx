@@ -1,10 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Upload, ScanSearch, Activity, Flame } from 'lucide-react';
+import { Upload, Activity, Flame } from 'lucide-react';
 
 const navItems = [
   { path: '/', label: 'Video Upload', icon: Upload, description: 'Upload & Process' },
-  { path: '/confirm', label: 'Machine Confirm', icon: ScanSearch, description: 'Verify Detections' },
-  { path: '/dashboard', label: 'Live Dashboard', icon: Activity, description: 'Monitor Gym' },
+  { path: '/dashboard', label: 'Detection Player', icon: Activity, description: 'Review Results' },
 ];
 
 export default function Sidebar() {

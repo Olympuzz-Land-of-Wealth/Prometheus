@@ -1,20 +1,24 @@
 """
-Prometheus AI — FastAPI backend
+Prometheus AI — FastAPI backend (2026-05-14)
 
 Routes:
-  POST /api/upload            — upload video, start machine detection
-  GET  /api/machines          — get detected machines for a session
-  WS   /ws/occupancy          — stream real-time occupancy per frame
+  POST /api/upload              — upload video, start analysis
+  GET  /api/status?session_id=  — poll until analysis is ready
+  GET  /api/results?session_id= — fetch full detection JSON
+  GET  /api/video?session_id=   — serve video file for browser playback
+  GET  /health                  — model mode check
+
+Streaming (WebSocket) will be added here later once friend's full
+pipeline is ready. Session structure already supports it.
 """
 
 import asyncio
-import json
 import shutil
-import tempfile
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 import detector
 import session as sess
@@ -28,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = Path(tempfile.gettempdir()) / "prometheus_uploads"
+UPLOAD_DIR = Path(__file__).parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
@@ -38,100 +42,85 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 @app.post("/api/upload")
 async def upload_video(file: UploadFile = File(...)):
-    if not file.content_type.startswith("video/"):
-        raise HTTPException(400, "File must be a video")
-
     dest = UPLOAD_DIR / file.filename
     with dest.open("wb") as f:
         shutil.copyfileobj(file.file, f)
 
     s = sess.create_session(str(dest))
-
-    # Run detection in background so upload returns immediately
-    asyncio.create_task(_run_detection(s))
+    asyncio.create_task(_run_analysis(s))
 
     return {"session_id": s.session_id, "status": "processing"}
 
 
-async def _run_detection(s: sess.Session):
+async def _run_analysis(s: sess.Session):
     try:
-        machines, fw, fh = await asyncio.to_thread(
-            detector.detect_machines, s.video_path
+        results = await asyncio.to_thread(
+            detector.analyze_video, s.video_path, 5
         )
-        s.machines = [
-            sess.Machine(
-                machine_id=m["machine_id"],
-                bbox=m["bbox"],
-                confidence=m["confidence"],
-            )
-            for m in machines
-        ]
-        s.frame_width = fw
-        s.frame_height = fh
+        s.frame_width = results["frame_width"]
+        s.frame_height = results["frame_height"]
+        s.results = {"session_id": s.session_id, **results}
         s.status = "ready"
+        print(f"[{s.session_id}] Analysis done — {results['total_frames_analyzed']} frames")
     except Exception as e:
         s.status = "error"
-        print(f"Detection error: {e}")
+        print(f"[{s.session_id}] Analysis error: {e}")
 
 
 # ---------------------------------------------------------------------------
-# GET /api/machines
+# GET /api/status
 # ---------------------------------------------------------------------------
 
-@app.get("/api/machines")
-async def get_machines(session_id: str):
+@app.get("/api/status")
+async def get_status(session_id: str):
+    s = sess.get_session(session_id)
+    if s is None:
+        raise HTTPException(404, "Session not found")
+    return {"session_id": s.session_id, "status": s.status}
+
+
+# ---------------------------------------------------------------------------
+# GET /api/results
+# ---------------------------------------------------------------------------
+
+@app.get("/api/results")
+async def get_results(session_id: str):
     s = sess.get_session(session_id)
     if s is None:
         raise HTTPException(404, "Session not found")
     if s.status == "processing":
-        raise HTTPException(202, "Still processing — try again shortly")
+        raise HTTPException(202, "Still processing")
     if s.status == "error":
-        raise HTTPException(500, "Detection failed")
-
-    return {
-        "session_id": s.session_id,
-        "camera_id": "cam_a",
-        "frame_width": s.frame_width,
-        "frame_height": s.frame_height,
-        "machines": [
-            {
-                "machine_id": m.machine_id,
-                "bbox": m.bbox,
-                "confidence": m.confidence,
-            }
-            for m in s.machines
-        ],
-    }
+        raise HTTPException(500, "Analysis failed")
+    return s.results
 
 
 # ---------------------------------------------------------------------------
-# WS /ws/occupancy
+# GET /api/video
 # ---------------------------------------------------------------------------
 
-@app.websocket("/ws/occupancy")
-async def ws_occupancy(websocket: WebSocket, session_id: str):
+@app.get("/api/video")
+async def get_video(session_id: str):
     s = sess.get_session(session_id)
-    if s is None or s.status != "ready":
-        await websocket.close(code=4004, reason="Session not ready")
-        return
-
-    await websocket.accept()
-    try:
-        machines = [
-            {"machine_id": m.machine_id, "bbox": m.bbox, "confidence": m.confidence}
-            for m in s.machines
-        ]
-        async for msg in detector.stream_occupancy(s.video_path, machines, session_id):
-            await websocket.send_text(json.dumps(msg))
-    except WebSocketDisconnect:
-        pass
+    if s is None:
+        raise HTTPException(404, "Session not found")
+    path = Path(s.video_path)
+    if not path.exists():
+        raise HTTPException(404, "Video file not found")
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+        headers={"Accept-Ranges": "bytes"},
+    )
 
 
 # ---------------------------------------------------------------------------
-# Health check
+# GET /health
 # ---------------------------------------------------------------------------
 
 @app.get("/health")
 async def health():
-    model_ready = detector._model is not None
-    return {"status": "ok", "model": "real" if model_ready else "mock"}
+    return {
+        "status": "ok",
+        "model": "real" if detector._model is not None else "mock",
+    }

@@ -106,3 +106,4 @@ data/**/*.png
 
 node_modules/
 CLAUDE.md
+uploads/
