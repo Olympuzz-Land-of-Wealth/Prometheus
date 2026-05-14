@@ -155,7 +155,9 @@ export default function Report() {
                 <Film className="w-4 h-4 text-prometheus-secondary flex-shrink-0" />
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-prometheus-cream text-[12px] font-medium truncate">{u.filename}</p>
+                  <p className="text-prometheus-cream text-[12px] font-medium truncate">
+                    {u.filename.length > 30 ? u.filename.slice(0, 27) + '...' : u.filename}
+                  </p>
                   <p className="text-prometheus-secondary text-[10px] mt-0.5">{formatDate(u.analyzed_at)}</p>
                 </div>
 

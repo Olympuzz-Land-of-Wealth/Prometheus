@@ -59,7 +59,9 @@ export default function VideoLibrary({ uploads, onSelect }) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-prometheus-cream text-[13px] font-semibold truncate">{u.filename}</p>
+              <p className="text-prometheus-cream text-[13px] font-semibold truncate">
+                {u.filename.length > 30 ? u.filename.slice(0, 27) + '...' : u.filename}
+              </p>
               <p className="text-prometheus-secondary text-[10px] mt-0.5">{formatDate(u.analyzed_at)}</p>
             </div>
 
