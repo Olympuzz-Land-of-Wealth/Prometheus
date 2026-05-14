@@ -3,106 +3,56 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
 # Environments
 .env
 .venv
-env/
 venv/
+env/
 ENV/
-env.bak/
-venv.bak/
 
-# IDE
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# MLflow / runtime outputs
-mlflow.db
+# --- PROMETHEUS SPECIFIC ---
+
+# 1. Binary Model Weights (Never commit these)
+*.pt
+*.onnx
+*.engine
+
+# 2. Training Artifacts & Results
+runs/
 mlruns/
+mlflow.db
+*.log
+results.csv
 
-# Ignore all runs content by default EXCEPT weights and results
-runs/**
-!runs/**/
-!**/*.pt
-!runs/**/*.png
-!runs/**/*.jpg
-!runs/**/*.csv
-!runs/**/*.yaml
+# 3. Datasets (Large image/label directories)
+model/data/test_frames/
+model/data/final_dataset/
+model/data/raw_frames/
+model/data/processed_dataset/
+model/data/labels_raw/
+data/
 
-# Data files
-model/data/**/*
-!model/data/**/.gitkeep
-data/**/*
-!data/**/.gitkeep
-# Global ignore for media in data folders
-model/data/**/*.jpg
-model/data/**/*.png
-data/**/*.jpg
-data/**/*.png
+# 4. Media Files
 *.mp4
 *.avi
 *.mov
-# Ensure ALL model weights are un-ignored
-!**/*.pt
+*.jpg
+*.png
+*.jpeg
 
 node_modules/
 .vite/
@@ -110,3 +60,9 @@ dist/
 CLAUDE.md
 uploads/
 flagged/
+
+# 5. Documentation (Ignored as requested)
+docs/
+
+# 6. Local configuration
+local_settings.json
