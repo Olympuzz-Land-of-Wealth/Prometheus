@@ -1,0 +1,61 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# --- PROMETHEUS SPECIFIC ---
+
+# 1. Binary Model Weights (Never commit these)
+*.pt
+*.onnx
+*.engine
+
+# 2. Training Artifacts & Results
+runs/
+mlruns/
+mlflow.db
+*.log
+results.csv
+
+# 3. Datasets (Large image/label directories)
+model/data/test_frames/
+model/data/final_dataset/
+model/data/raw_frames/
+model/data/processed_dataset/
+model/data/labels_raw/
+data/
+
+# 4. Media Files
+*.mp4
+*.avi
+*.mov
+*.jpg
+*.png
+*.jpeg
+
+# 5. Documentation (Ignored as requested)
+docs/
+
+# 6. Local configuration
+local_settings.json
