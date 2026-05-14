@@ -54,6 +54,13 @@ data/
 *.png
 *.jpeg
 
+node_modules/
+.vite/
+dist/
+CLAUDE.md
+uploads/
+flagged/
+
 # 5. Documentation (Ignored as requested)
 docs/
 
