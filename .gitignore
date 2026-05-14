@@ -105,6 +105,8 @@ data/**/*.png
 !**/*.pt
 
 node_modules/
+.vite/
+dist/
 CLAUDE.md
 uploads/
 flagged/

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, Dumbbell, Clock, Flag } from 'lucide-react';
 import { flagDetection } from '@/api/prometheus';
 
@@ -77,6 +77,10 @@ export default function DetectionPanel({ frame, totalFrames, currentTime, sessio
       return next;
     });
   };
+
+  useEffect(() => {
+    setFlagged(new Set());
+  }, [frame?.frame_index]);
 
   const persons = frame?.persons ?? [];
   const machines = frame?.machines ?? [];
