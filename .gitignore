@@ -53,9 +53,9 @@ data/
 *.jpg
 *.png
 *.jpeg
-# Exceptions: Keep project documentation images if any exist in docs/
-!docs/**/*.png
-!docs/**/*.jpg
 
-# 5. Local configuration
+# 5. Documentation (Ignored as requested)
+docs/
+
+# 6. Local configuration
 local_settings.json
