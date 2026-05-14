@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Dumbbell, Film, Clock, BarChart2, FolderOpen, ExternalLink } from 'lucide-react';
-import { fetchResults, fetchUploads } from '../api/prometheus';
+import { Users, Dumbbell, Film, Clock, BarChart2, FolderOpen, ExternalLink, Flag } from 'lucide-react';
+import { fetchResults, fetchUploads, fetchFlags } from '../api/prometheus';
 
 function formatTime(seconds) {
   if (!seconds || isNaN(seconds)) return '0:00';
@@ -92,6 +92,7 @@ export default function Report() {
   const [currentResults, setCurrentResults] = useState(null);
   const [uploads, setUploads] = useState([]);
   const [loadingUploads, setLoadingUploads] = useState(true);
+  const [flagCounts, setFlagCounts] = useState({});
 
   useEffect(() => {
     if (state?.session_id) {
@@ -100,6 +101,7 @@ export default function Report() {
     fetchUploads()
       .then((d) => setUploads(d.uploads))
       .finally(() => setLoadingUploads(false));
+    fetchFlags().then((d) => setFlagCounts(d.flags)).catch(() => {});
   }, [state?.session_id]);
 
   const openInPlayer = (sessionId) => {
@@ -172,6 +174,12 @@ export default function Report() {
                   </div>
                   {u.size_mb && (
                     <span className="text-prometheus-secondary">{u.size_mb} MB</span>
+                  )}
+                  {flagCounts[u.session_id] > 0 && (
+                    <div className="flex items-center gap-1 text-prometheus-yellow">
+                      <Flag className="w-3 h-3" />
+                      <span>{flagCounts[u.session_id]} flagged</span>
+                    </div>
                   )}
                 </div>
 

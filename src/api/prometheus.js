@@ -37,3 +37,29 @@ export async function fetchUploads() {
 export function videoUrl(sessionId) {
   return `${BASE}/api/video?session_id=${sessionId}`;
 }
+
+export async function flagDetection({ sessionId, frameIndex, detectionId, bbox, predictedClass, confidence }) {
+  const res = await fetch(`${BASE}/api/flag`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id: sessionId,
+      frame_index: frameIndex,
+      detection_id: detectionId,
+      bbox,
+      predicted_class: predictedClass,
+      confidence,
+    }),
+  });
+  if (!res.ok) throw new Error('Flag failed');
+  return res.json();
+}
+
+export async function fetchFlags(sessionId) {
+  const url = sessionId
+    ? `${BASE}/api/flags?session_id=${sessionId}`
+    : `${BASE}/api/flags`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch flags');
+  return res.json(); // { flags: { session_id: count } }
+}

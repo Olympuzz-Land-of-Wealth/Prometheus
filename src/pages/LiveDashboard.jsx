@@ -6,7 +6,7 @@ import VideoPlayer from '../components/player/VideoPlayer';
 import DetectionPanel from '../components/player/DetectionPanel';
 import ModeToggle from '../components/player/ModeToggle';
 import VideoLibrary from '../components/player/VideoLibrary';
-import { fetchResults, videoUrl } from '../api/prometheus';
+import { fetchResults, fetchUploads, videoUrl } from '../api/prometheus';
 
 export default function LiveDashboard() {
   const { state } = useLocation();
@@ -18,6 +18,7 @@ export default function LiveDashboard() {
   const [currentTime, setCurrentTime] = useState(0);
   const [showLibrary, setShowLibrary] = useState(!state?.session_id);
   const [error, setError] = useState(null);
+  const [uploads, setUploads] = useState(null);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -28,9 +29,16 @@ export default function LiveDashboard() {
       .catch((e) => setError(e.message));
   }, [sessionId]);
 
+  useEffect(() => {
+    fetchUploads()
+      .then((d) => setUploads(d.uploads))
+      .catch(() => setUploads([]));
+  }, []);
+
   const handleSelectFromLibrary = (sid) => {
     setSessionId(sid);
     setShowLibrary(false);
+    fetchUploads().then((d) => setUploads(d.uploads)).catch(() => {});
   };
 
   const handleFrameChange = (frame, time) => {
@@ -80,7 +88,7 @@ export default function LiveDashboard() {
       {mode === 'streaming' ? (
         <StreamingPlaceholder />
       ) : showLibrary ? (
-        <VideoLibrary onSelect={handleSelectFromLibrary} />
+        <VideoLibrary uploads={uploads} onSelect={handleSelectFromLibrary} />
       ) : error ? (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-prometheus-red text-[13px]">{error}</p>
@@ -111,6 +119,7 @@ export default function LiveDashboard() {
               frame={currentFrame}
               totalFrames={results.total_frames_analyzed}
               currentTime={currentTime}
+              sessionId={sessionId}
             />
           </motion.div>
         </div>

@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
 import { FileVideo, Users, Dumbbell, Clock, FolderOpen } from 'lucide-react';
-import { fetchUploads } from '@/api/prometheus';
 import { motion } from 'framer-motion';
 
 function formatDate(iso) {
@@ -16,19 +14,9 @@ function formatDuration(seconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export default function VideoLibrary({ onSelect }) {
-  const [uploads, setUploads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchUploads()
-      .then((data) => setUploads(data.uploads))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+export default function VideoLibrary({ uploads, onSelect }) {
+  // uploads === null means still loading (parent hasn't fetched yet)
+  if (uploads === null) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="flex gap-1">
@@ -38,14 +26,6 @@ export default function VideoLibrary({ onSelect }) {
               transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }} />
           ))}
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-prometheus-red text-[13px]">{error}</p>
       </div>
     );
   }

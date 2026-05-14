@@ -7,6 +7,8 @@ Routes:
   GET  /api/results?session_id= — fetch full detection JSON (memory → disk fallback)
   GET  /api/video?session_id=   — serve video file for browser playback
   GET  /api/uploads             — list all analyzed videos with stats
+  POST /api/flag                — save a flagged detection (frame + crop + metadata)
+  GET  /api/flags               — list flagged detection counts per session
   GET  /health                  — model mode check
 """
 
@@ -15,10 +17,13 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
+import cv2
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 import detector
 import session as sess
@@ -34,6 +39,9 @@ app.add_middleware(
 
 UPLOAD_DIR = Path(__file__).parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+FLAGGED_DIR = Path(__file__).parent / "flagged"
+FLAGGED_DIR.mkdir(exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +174,111 @@ async def list_uploads():
             continue
 
     return {"uploads": items}
+
+
+# ---------------------------------------------------------------------------
+# POST /api/flag
+# ---------------------------------------------------------------------------
+
+class BBox(BaseModel):
+    x: float
+    y: float
+    w: float
+    h: float
+
+class FlagRequest(BaseModel):
+    session_id: str
+    frame_index: int
+    detection_id: str
+    bbox: BBox
+    predicted_class: str
+    confidence: float
+
+@app.post("/api/flag")
+async def flag_detection(req: FlagRequest):
+    # Resolve video path from session memory or disk
+    s = sess.get_session(req.session_id)
+    if s:
+        video_path = Path(s.video_path)
+        frame_w = s.frame_width
+        frame_h = s.frame_height
+    else:
+        results_path = UPLOAD_DIR / f"{req.session_id}_results.json"
+        if not results_path.exists():
+            raise HTTPException(404, "Session not found")
+        data = json.loads(results_path.read_text())
+        video_path = UPLOAD_DIR / data["filename"]
+        frame_w = data.get("frame_width", 1920)
+        frame_h = data.get("frame_height", 1080)
+
+    if not video_path.exists():
+        raise HTTPException(404, "Video file not found")
+
+    # Directory for this flagged detection
+    out_dir = FLAGGED_DIR / req.session_id / f"frame{req.frame_index}_{req.detection_id}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Extract frame from video
+    cap = cv2.VideoCapture(str(video_path))
+    cap.set(cv2.CAP_PROP_POS_FRAMES, req.frame_index)
+    ok, frame = cap.read()
+    cap.release()
+
+    if not ok:
+        raise HTTPException(422, "Could not extract frame from video")
+
+    # Save full frame
+    full_path = out_dir / "full_frame.jpg"
+    cv2.imwrite(str(full_path), frame)
+
+    # Crop with small padding (5% of bbox size)
+    fh, fw = frame.shape[:2]
+    pad_x = int(req.bbox.w * fw * 0.05)
+    pad_y = int(req.bbox.h * fh * 0.05)
+    x1 = max(0, int((req.bbox.x - req.bbox.w / 2) * fw) - pad_x)
+    y1 = max(0, int((req.bbox.y - req.bbox.h / 2) * fh) - pad_y)
+    x2 = min(fw, int((req.bbox.x + req.bbox.w / 2) * fw) + pad_x)
+    y2 = min(fh, int((req.bbox.y + req.bbox.h / 2) * fh) + pad_y)
+    crop = frame[y1:y2, x1:x2]
+    cv2.imwrite(str(out_dir / "crop.jpg"), crop)
+
+    # Save metadata
+    metadata = {
+        "session_id": req.session_id,
+        "frame_index": req.frame_index,
+        "detection_id": req.detection_id,
+        "predicted_class": req.predicted_class,
+        "confidence": req.confidence,
+        "bbox_xywhn": {"x": req.bbox.x, "y": req.bbox.y, "w": req.bbox.w, "h": req.bbox.h},
+        "frame_size": {"width": frame_w, "height": frame_h},
+        "flagged_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (out_dir / "metadata.json").write_text(json.dumps(metadata, indent=2))
+
+    return {"status": "flagged", "path": str(out_dir.relative_to(Path(__file__).parent))}
+
+
+# ---------------------------------------------------------------------------
+# GET /api/flags  — flagged detection counts per session
+# ---------------------------------------------------------------------------
+
+@app.get("/api/flags")
+async def list_flags(session_id: Optional[str] = None):
+    result = {}
+    search_root = FLAGGED_DIR / session_id if session_id else FLAGGED_DIR
+
+    if not search_root.exists():
+        return {"flags": result if session_id else {}}
+
+    if session_id:
+        count = sum(1 for p in search_root.iterdir() if p.is_dir())
+        return {"flags": {session_id: count}}
+
+    for sid_dir in FLAGGED_DIR.iterdir():
+        if sid_dir.is_dir():
+            result[sid_dir.name] = sum(1 for p in sid_dir.iterdir() if p.is_dir())
+
+    return {"flags": result}
 
 
 # ---------------------------------------------------------------------------
