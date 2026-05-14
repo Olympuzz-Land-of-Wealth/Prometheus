@@ -50,7 +50,7 @@ FLAGGED_DIR.mkdir(exist_ok=True)
 
 @app.post("/api/upload")
 async def upload_video(file: UploadFile = File(...)):
-    dest = UPLOAD_DIR / file.filename
+    dest = UPLOAD_DIR / Path(file.filename).name
     with dest.open("wb") as f:
         shutil.copyfileobj(file.file, f)
 
@@ -214,8 +214,12 @@ async def flag_detection(req: FlagRequest):
     if not video_path.exists():
         raise HTTPException(404, "Video file not found")
 
+    # Sanitize client-supplied path components
+    safe_sid = Path(req.session_id).name
+    safe_did = req.detection_id.replace("/", "_").replace("..", "_")
+
     # Directory for this flagged detection
-    out_dir = FLAGGED_DIR / req.session_id / f"frame{req.frame_index}_{req.detection_id}"
+    out_dir = FLAGGED_DIR / safe_sid / f"frame{req.frame_index}_{safe_did}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Extract frame from video
@@ -231,14 +235,14 @@ async def flag_detection(req: FlagRequest):
     full_path = out_dir / "full_frame.jpg"
     cv2.imwrite(str(full_path), frame)
 
-    # Crop with small padding (5% of bbox size)
+    # Crop with small padding — bbox is top-left format {x, y, w, h} normalized
     fh, fw = frame.shape[:2]
     pad_x = int(req.bbox.w * fw * 0.05)
     pad_y = int(req.bbox.h * fh * 0.05)
-    x1 = max(0, int((req.bbox.x - req.bbox.w / 2) * fw) - pad_x)
-    y1 = max(0, int((req.bbox.y - req.bbox.h / 2) * fh) - pad_y)
-    x2 = min(fw, int((req.bbox.x + req.bbox.w / 2) * fw) + pad_x)
-    y2 = min(fh, int((req.bbox.y + req.bbox.h / 2) * fh) + pad_y)
+    x1 = max(0, int(req.bbox.x * fw) - pad_x)
+    y1 = max(0, int(req.bbox.y * fh) - pad_y)
+    x2 = min(fw, int((req.bbox.x + req.bbox.w) * fw) + pad_x)
+    y2 = min(fh, int((req.bbox.y + req.bbox.h) * fh) + pad_y)
     crop = frame[y1:y2, x1:x2]
     cv2.imwrite(str(out_dir / "crop.jpg"), crop)
 
